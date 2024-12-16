@@ -17,7 +17,7 @@ TRACKERS_FILE = "trackers.json"
 
 # Fetch drivers
 def fetch_drivers():
-    url = f"{API_BASE_URL}/driver/list"
+    url = f"{API_BASE_URL}/employee/list"
     response = requests.post(url, headers=HEADERS, json={"hash": API_KEY})
     if response.status_code == 200:
         drivers = response.json().get("list", [])
