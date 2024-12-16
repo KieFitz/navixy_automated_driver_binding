@@ -52,7 +52,7 @@ def fetch_sensor_data():
     url = f"{API_BASE_URL}/tracker/readings/batch_list"
     payload = {
         "hash": API_KEY,
-        "trackers": [tracker_ids]
+        "trackers": tracker_ids
     }
     response = requests.post(url, headers=HEADERS, json=payload)
 
@@ -61,7 +61,7 @@ def fetch_sensor_data():
     else:
         print(f"Error fetching sensor data: {response.status_code}, {response.text}")
 
-# Process sensor data and assign drivers
+# Process sensor (if required) data and assign drivers
 def process_sensor_data(data):
     try:
         with open(DRIVERS_FILE, "r") as f:
@@ -79,7 +79,7 @@ def process_sensor_data(data):
         if driver_id and driver_id in driver_map:
             assign_driver_to_tracker(tracker_id, driver_map[driver_id])
 
-# Parse driver ID from sensors (explicitly parsing Driver_ID_MSB and Driver_ID_LSB)
+# Parse driver ID from sensors (explicitly parsing Driver_ID_MSB and Driver_ID_LSB as using Teltonika device and tachograph data)
 def parse_driver_id_from_sensors(sensors):
     msb = None
     lsb = None
