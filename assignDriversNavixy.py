@@ -58,11 +58,12 @@ def fetch_sensor_data():
     response = requests.post(url, headers=HEADERS, json=payload)
 
     if response.status_code == 200:
+        print("Sensor data fetched.")
         process_sensor_data(response.json())
     else:
         print(f"Error fetching sensor data: {response.status_code}, {response.text}")
 
-# Process sensor (if required) data and assign drivers
+# Process sensor data and assign drivers
 def process_sensor_data(data):
     try:
         with open(DRIVERS_FILE, "r") as f:
@@ -96,12 +97,15 @@ def parse_driver_id_from_sensors(sensors):
 
 # Assign driver to tracker
 def assign_driver_to_tracker(tracker_id, driver):
-    url = f"{API_BASE_URL}/tracker/assign_driver"
+    url = f"{API_BASE_URL}/tracker/employee/assign"
     payload = {
         "hash": API_KEY,
         "tracker_id": tracker_id,
         "driver_id": driver["id"]
     }
+
+    print(f"Attempting to assign driver {driver['id']} ({driver['first_name']} {driver['last_name']}) to tracker {tracker_id}.")
+    print(f"Payload: {payload}")
     response = requests.post(url, headers=HEADERS, json=payload)
 
     if response.status_code == 200:
