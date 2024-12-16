@@ -49,11 +49,10 @@ def fetch_sensor_data():
         return
 
     tracker_ids = [tracker["id"] for tracker in trackers]
-    url = f"{API_BASE_URL}/tracker/batch_read"
+    url = f"{API_BASE_URL}/tracker/readings/batch_list"
     payload = {
         "hash": API_KEY,
-        "trackers": tracker_ids,
-        "fields": ["sensors"]
+        "trackers": [tracker_ids]
     }
     response = requests.post(url, headers=HEADERS, json=payload)
 
@@ -73,9 +72,8 @@ def process_sensor_data(data):
 
     driver_map = {driver["hardware_key"]: driver for driver in drivers}
 
-    for tracker in data.get("trackers", []):
-        tracker_id = tracker["id"]
-        sensors = tracker.get("sensors", [])
+    for tracker_id, tracker_data in data.get("result", {}).items():
+        sensors = tracker_data.get("inputs", [])
         driver_id = parse_driver_id_from_sensors(sensors)
 
         if driver_id and driver_id in driver_map:
@@ -86,13 +84,13 @@ def parse_driver_id_from_sensors(sensors):
     msb = None
     lsb = None
     for sensor in sensors:
-        if sensor["type"] == "Driver_ID_MSB":
-            msb = sensor["value"]
-        elif sensor["type"] == "Driver_ID_LSB":
-            lsb = sensor["value"]
-    
+        if sensor["label"] == "Driver_ID_MSB":
+            msb = int(sensor["value"])
+        elif sensor["label"] == "Driver_ID_LSB":
+            lsb = int(sensor["value"])
+
     if msb is not None and lsb is not None:
-        return (msb << 8) | lsb
+        return (msb << 32) | lsb
     return None
 
 # Assign driver to tracker
