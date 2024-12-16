@@ -79,7 +79,7 @@ def process_sensor_data(data):
         driver_id = parse_driver_id_from_sensors(sensors)
 
         if driver_id and driver_id in driver_map:
-            assign_driver_to_tracker(tracker_id, driver_map[driver_id])
+            assign_driver_to_tracker(tracker_id, driver_map[driver_id], driver_id)
 
 # Parse driver ID from sensors (explicitly parsing Driver_ID_MSB and Driver_ID_LSB as using Teltonika device and tachograph data)
 def parse_driver_id_from_sensors(sensors):
@@ -96,22 +96,22 @@ def parse_driver_id_from_sensors(sensors):
     return None
 
 # Assign driver to tracker
-def assign_driver_to_tracker(tracker_id, driver):
+def assign_driver_to_tracker(tracker_id, driver, driver_id):
     url = f"{API_BASE_URL}/tracker/employee/assign"
     payload = {
         "hash": API_KEY,
         "tracker_id": tracker_id,
-        "driver_id": driver["id"]
+        "new_employee_id": driver["id"]
     }
 
-    print(f"Attempting to assign driver {driver['id']} ({driver['first_name']} {driver['last_name']}) to tracker {tracker_id}.")
+    print(f"Attempting to assign employee_id {driver['id']} ({driver['first_name']} {driver['last_name']}) to tracker {tracker_id} using driver_id {driver_id}.")
     print(f"Payload: {payload}")
     response = requests.post(url, headers=HEADERS, json=payload)
 
     if response.status_code == 200:
-        print(f"Assigned driver {driver['name']} to tracker {tracker_id}.")
+        print(f"Assigned employee_id {driver['id']} to tracker {tracker_id} successfully.")
     else:
-        print(f"Error assigning driver: {response.status_code}, {response.text}")
+        print(f"Error assigning employee_id: {response.status_code}, {response.text}")
 
 # Schedule tasks
 schedule.every().day.at("00:00").do(fetch_drivers)
