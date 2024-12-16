@@ -2,12 +2,15 @@ import requests
 import json
 import time
 import schedule
+from dotenv import load_dotenv
+import os
 
-from .env import API_KEY
+# Load environment variables
+load_dotenv()
 
 # Configurations
 API_BASE_URL = "https://api.navixy.com/v2"
-API_KEY = API_KEY
+API_KEY = os.getenv("API_KEY")
 HEADERS = {"Content-Type": "application/json"}
 DRIVERS_FILE = "drivers.json"
 TRACKERS_FILE = "trackers.json"
@@ -78,12 +81,18 @@ def process_sensor_data(data):
         if driver_id and driver_id in driver_map:
             assign_driver_to_tracker(tracker_id, driver_map[driver_id])
 
-# Parse driver ID from sensors (placeholder for specific Teltonika logic)
+# Parse driver ID from sensors (explicitly parsing Driver_ID_MSB and Driver_ID_LSB)
 def parse_driver_id_from_sensors(sensors):
-    # Placeholder logic to extract driverID
+    msb = None
+    lsb = None
     for sensor in sensors:
-        if sensor["type"] == "driver_id":
-            return sensor["value"]
+        if sensor["type"] == "Driver_ID_MSB":
+            msb = sensor["value"]
+        elif sensor["type"] == "Driver_ID_LSB":
+            lsb = sensor["value"]
+    
+    if msb is not None and lsb is not None:
+        return (msb << 8) | lsb
     return None
 
 # Assign driver to tracker
