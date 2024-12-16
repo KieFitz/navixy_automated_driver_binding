@@ -78,8 +78,16 @@ def process_sensor_data(data):
         sensors = tracker_data.get("inputs", [])
         driver_id = parse_driver_id_from_sensors(sensors)
 
-        if driver_id and driver_id in driver_map:
-            assign_driver_to_tracker(tracker_id, driver_map[driver_id], driver_id)
+        if driver_id:
+            driver = driver_map.get(driver_id)
+            if driver:
+                employee_id = driver["id"]  # Renamed for clarity
+                print(f"Matching employee_id {employee_id} for driver_id {driver_id}.")
+                assign_driver_to_tracker(tracker_id, driver, driver_id)
+            else:
+                print(f"No matching driver found in driver_map for driver_id {driver_id}.")
+        else:
+            print(f"No valid Driver ID found for tracker {tracker_id}.")
 
 # Parse driver ID from sensors (explicitly parsing Driver_ID_MSB and Driver_ID_LSB as using Teltonika device and tachograph data)
 def parse_driver_id_from_sensors(sensors):
