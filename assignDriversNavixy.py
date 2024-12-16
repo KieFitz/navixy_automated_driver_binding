@@ -12,6 +12,7 @@ load_dotenv()
 API_BASE_URL = "https://api.navixy.com/v2"
 API_KEY = os.getenv("API_KEY")
 HEADERS = {"Content-Type": "application/json"}
+# writes driver list and trackers list to json once a day to update if new employees/trackers are added.
 DRIVERS_FILE = "drivers.json"
 TRACKERS_FILE = "trackers.json"
 
@@ -27,7 +28,7 @@ def fetch_drivers():
     else:
         print(f"Error fetching drivers: {response.status_code}, {response.text}")
 
-# Fetch trackers
+# Fetch trackers ID list
 def fetch_trackers():
     url = f"{API_BASE_URL}/tracker/list"
     response = requests.post(url, headers=HEADERS, json={"hash": API_KEY})
