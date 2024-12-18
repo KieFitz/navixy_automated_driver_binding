@@ -112,13 +112,11 @@ def parse_driver_id_from_sensors(sensors):
             try:
                 msb = int(sensor["value"])  # Directly parse as integer
             except (ValueError, TypeError):
-                print(f"Invalid MSB value: {sensor['value']}")
                 return None
         elif sensor["label"] == "Driver_ID_LSB":
             try:
                 lsb = int(sensor["value"])  # Directly parse as integer
             except (ValueError, TypeError):
-                print(f"Invalid LSB value: {sensor['value']}")
                 return None
 
     if msb is not None and lsb is not None:
