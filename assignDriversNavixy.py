@@ -145,21 +145,27 @@ def parse_driver_id_from_sensors(sensors):
 # Parse driver name from sensors
 def parse_driver_name_from_sensors(sensors):
     driver_name = ""
+    driver_surname = ""
     for sensor in sensors:
         if sensor["label"] == "Driver Name":
             try:
                 driver_name = sensor["value"]  # Extract driver name directly
-                print(f"Parsed driver name: {driver_name}")
-                return driver_name
             except (KeyError, TypeError):
                 print(f"Error parsing driver name from sensor: {sensor}")
-                return None
+        elif sensor["label"] == "Driver Surname":
+            try:
+                driver_surname = sensor["value"]  # Extract driver surname directly
+            except (KeyError, TypeError):
+                print(f"Error parsing driver surname from sensor: {sensor}")
 
-    print("Driver name not found in sensors.")
-    return None
+    if driver_name and driver_surname:
+        print(f"Parsed driver name: {driver_name}, surname: {driver_surname}")
+    else:
+        print("Driver name or surname not found in sensors.")
+    return driver_name, driver_surname
 
 # Add new driver to Navixy
-def add_driver_to_navixy(driver_name, driver_id):
+def add_driver_to_navixy(driver_name, driver_surname, driver_id):
     url = f"{API_BASE_URL}/employee/create"
     payload = {
         "hash": API_KEY,
@@ -167,9 +173,9 @@ def add_driver_to_navixy(driver_name, driver_id):
         "employee": {
             "id": None,
             "files": [],
-            "first_name": driver_name.split()[0],
+            "first_name": driver_name,
             "middle_name": "",
-            "last_name": " ".join(driver_name.split()[1:]),
+            "last_name": driver_surname,
             "email": "",
             "phone": "",
             "driver_license_number": "",
