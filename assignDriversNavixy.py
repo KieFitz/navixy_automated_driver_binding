@@ -95,7 +95,11 @@ def process_sensor_data(data):
                 assign_driver_to_tracker(tracker_id, driver, driver_id)
                 last_assigned_drivers[tracker_id] = employee_id
             else:
-                print(f"No matching driver found in driver_map for driver_id {driver_id}.")
+                print(f"No matching driver found in driver_map for driver_id {driver_id}. Attempting to parse driver name and add new driver.")
+                driver_name = parse_driver_name_from_sensors(sensors)
+                if driver_name:
+                    add_driver_to_navixy(driver_name, driver_id)
+                    fetch_drivers()  # Refresh driver list after adding new driver
         else:
             # Unassign driver if no valid Driver ID is found
             if tracker_id in last_assigned_drivers:
@@ -112,11 +116,13 @@ def parse_driver_id_from_sensors(sensors):
             try:
                 msb = int(sensor["value"])  # Directly parse as integer
             except (ValueError, TypeError):
+                print(f"Invalid MSB value: {sensor['value']}")
                 return None
         elif sensor["label"] == "Driver_ID_LSB":
             try:
                 lsb = int(sensor["value"])  # Directly parse as integer
             except (ValueError, TypeError):
+                print(f"Invalid LSB value: {sensor['value']}")
                 return None
 
     if msb is not None and lsb is not None:
@@ -135,6 +141,58 @@ def parse_driver_id_from_sensors(sensors):
 
     print("Driver_ID_MSB or Driver_ID_LSB missing or invalid in sensors.")
     return None
+
+# Parse driver name from sensors
+def parse_driver_name_from_sensors(sensors):
+    driver_name = ""
+    for sensor in sensors:
+        if sensor["label"] == "Driver Name":
+            try:
+                driver_name = sensor["value"]  # Extract driver name directly
+                print(f"Parsed driver name: {driver_name}")
+                return driver_name
+            except (KeyError, TypeError):
+                print(f"Error parsing driver name from sensor: {sensor}")
+                return None
+
+    print("Driver name not found in sensors.")
+    return None
+
+# Add new driver to Navixy
+def add_driver_to_navixy(driver_name, driver_id):
+    url = f"{API_BASE_URL}/employee/create"
+    payload = {
+        "hash": API_KEY,
+        "force_reassign": True,
+        "employee": {
+            "id": None,
+            "files": [],
+            "first_name": driver_name.split()[0],
+            "middle_name": "",
+            "last_name": " ".join(driver_name.split()[1:]),
+            "email": "",
+            "phone": "",
+            "driver_license_number": "",
+            "driver_license_cats": "",
+            "driver_license_issue_date": None,
+            "driver_license_valid_till": None,
+            "hardware_key": driver_id,
+            "ssn": "",
+            "personnel_number": "",
+            "location": None,
+            "tags": [],
+            "fields": {}
+        }
+    }
+
+    print(f"Adding new driver to Navixy: {payload}")
+    response = requests.post(url, headers=HEADERS, json=payload)
+
+    if response.status_code == 200:
+        print(f"Driver {driver_name} added successfully.")
+    else:
+        print(f"Error adding driver: {response.status_code}, {response.text}")
+
 
 # Assign driver to tracker
 def assign_driver_to_tracker(tracker_id, driver, driver_id):
@@ -170,7 +228,7 @@ def unassign_driver_from_tracker(tracker_id):
         "new_employee_id": None
     }
 
-    print(f"Unassigning driver from tracker {tracker_id}.")
+    print(f"Unassigning driver from tracker {tracker_id}. Making API call.")
     print(f"Payload: {payload}")
     response = requests.post(url, headers=HEADERS, json=payload)
 
