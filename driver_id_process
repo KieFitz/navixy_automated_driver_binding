@@ -1,6 +1,6 @@
 def process_and_merge_driver_id(msb: int, lsb: int) -> str:
     """
-    Processes MSB and LSB by converting to hex, ASCII, mirroring, and concatenates the results.
+    Test function for ProcessingMSB and LSB by converting to hex, ASCII, mirroring, and concatenates the results.
     
     Args:
         msb (int): Most Significant Bytes in decimal format.
