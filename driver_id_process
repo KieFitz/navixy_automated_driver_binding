@@ -1,0 +1,35 @@
+def process_and_merge_driver_id(msb: int, lsb: int) -> str:
+    """
+    Processes MSB and LSB by converting to hex, ASCII, mirroring, and concatenates the results.
+    
+    Args:
+        msb (int): Most Significant Bytes in decimal format.
+        lsb (int): Least Significant Bytes in decimal format.
+        
+    Returns:
+        str: The final Driver1 ID as a concatenated string of MSB and LSB.
+    """
+    def process_individual(value: int) -> str:
+        # Step 1: Convert Decimal to Hex
+        hex_value = format(value, 'X')  # Convert to uppercase hexadecimal
+        
+        # Step 2: Convert Hexadecimal to ASCII
+        ascii_value = ''.join(chr(int(hex_value[i:i+2], 16)) for i in range(0, len(hex_value), 2))
+        
+        return ascii_value
+
+    # Process MSB and LSB individually
+    processed_msb = process_individual(msb)
+    processed_lsb = process_individual(lsb)
+    
+    # Step 4: Concatenate MSB and LSB
+    combined_driver_id = processed_msb + processed_lsb
+    
+    return combined_driver_id
+
+# Example usage
+msb = 3544390288312119300 # Example MSB in decimal
+lsb = 3760845670684045300  # Example LSB in decimal
+
+driver_id = process_and_merge_driver_id(msb, lsb)
+print(f"Final Driver1 ID: {driver_id}")

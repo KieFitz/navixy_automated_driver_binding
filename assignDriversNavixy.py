@@ -109,9 +109,17 @@ def parse_driver_id_from_sensors(sensors):
     lsb = None
     for sensor in sensors:
         if sensor["label"] == "Driver_ID_MSB":
-            msb = int(sensor["value"])  # Directly parse as integer
+            try:
+                msb = int(sensor["value"])  # Directly parse as integer
+            except (ValueError, TypeError):
+                print(f"Invalid MSB value: {sensor['value']}")
+                return None
         elif sensor["label"] == "Driver_ID_LSB":
-            lsb = int(sensor["value"])  # Directly parse as integer
+            try:
+                lsb = int(sensor["value"])  # Directly parse as integer
+            except (ValueError, TypeError):
+                print(f"Invalid LSB value: {sensor['value']}")
+                return None
 
     if msb is not None and lsb is not None:
         # Convert MSB and LSB to hex
@@ -127,7 +135,7 @@ def parse_driver_id_from_sensors(sensors):
         print(f"Processed Driver ID: {driver_id} (MSB: {msb}, LSB: {lsb})")
         return driver_id
 
-    print("Driver_ID_MSB or Driver_ID_LSB missing in sensors.")
+    print("Driver_ID_MSB or Driver_ID_LSB missing or invalid in sensors.")
     return None
 
 # Assign driver to tracker
@@ -145,6 +153,13 @@ def assign_driver_to_tracker(tracker_id, driver, driver_id):
 
     if response.status_code == 200:
         print(f"Assigned employee_id {driver['id']} to tracker {tracker_id} successfully.")
+    elif response.status_code == 400:
+        # Handle specific "no change needed" error
+        response_json = response.json()
+        if response_json.get("status", {}).get("code") == 263:
+            print(f"No change needed for tracker {tracker_id}. Skipping assignment.")
+        else:
+            print(f"Unexpected error while assigning employee_id: {response.text}")
     else:
         print(f"Error assigning employee_id: {response.status_code}, {response.text}")
 
@@ -154,7 +169,7 @@ def unassign_driver_from_tracker(tracker_id):
     payload = {
         "hash": API_KEY,
         "tracker_id": tracker_id,
-        "new_employee_id": ""
+        "new_employee_id": None
     }
 
     print(f"Unassigning driver from tracker {tracker_id}.")
