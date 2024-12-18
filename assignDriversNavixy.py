@@ -96,9 +96,9 @@ def process_sensor_data(data):
                 last_assigned_drivers[tracker_id] = employee_id
             else:
                 print(f"No matching driver found in driver_map for driver_id {driver_id}. Attempting to parse driver name and add new driver.")
-                driver_name = parse_driver_name_from_sensors(sensors)
-                if driver_name:
-                    add_driver_to_navixy(driver_name, driver_id)
+                driver_name, driver_surname = parse_driver_name_from_sensors(sensors)
+                if driver_name and driver_surname:
+                    add_driver_to_navixy(driver_name, driver_surname, driver_id)
                     fetch_drivers()  # Refresh driver list after adding new driver
         else:
             # Unassign driver if no valid Driver ID is found
@@ -143,20 +143,29 @@ def parse_driver_id_from_sensors(sensors):
     return None
 
 # Parse driver name from sensors
+# Parse driver name and surname from sensors
 def parse_driver_name_from_sensors(sensors):
     driver_name = ""
     driver_surname = ""
     for sensor in sensors:
-        if sensor["label"] == "Driver Name":
+        if sensor["label"] == "dn":
             try:
                 driver_name = sensor["value"]  # Extract driver name directly
+                if driver_name in ["", "Off", None]:
+                    print(f"Invalid or missing driver name: {driver_name}")
+                    return None, None
             except (KeyError, TypeError):
                 print(f"Error parsing driver name from sensor: {sensor}")
-        elif sensor["label"] == "Driver Surname":
+                return None, None
+        elif sensor["label"] == "ds":
             try:
                 driver_surname = sensor["value"]  # Extract driver surname directly
+                if driver_surname in ["", "Off", None]:
+                    print(f"Invalid or missing driver surname: {driver_surname}")
+                    return None, None
             except (KeyError, TypeError):
                 print(f"Error parsing driver surname from sensor: {sensor}")
+                return None, None
 
     if driver_name and driver_surname:
         print(f"Parsed driver name: {driver_name}, surname: {driver_surname}")
