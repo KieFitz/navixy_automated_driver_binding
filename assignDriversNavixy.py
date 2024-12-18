@@ -16,6 +16,9 @@ HEADERS = {"Content-Type": "application/json"}
 DRIVERS_FILE = "drivers.json"
 TRACKERS_FILE = "trackers.json"
 
+# Memory to track last assigned drivers
+last_assigned_drivers = {}
+
 # Fetch drivers
 def fetch_drivers():
     url = f"{API_BASE_URL}/employee/list"
@@ -53,7 +56,8 @@ def fetch_sensor_data():
     url = f"{API_BASE_URL}/tracker/readings/batch_list"
     payload = {
         "hash": API_KEY,
-        "trackers": tracker_ids
+        "trackers": tracker_ids,
+        "sensor_type": "state"
     }
     response = requests.post(url, headers=HEADERS, json=payload)
 
@@ -75,19 +79,29 @@ def process_sensor_data(data):
     driver_map = {driver["hardware_key"]: driver for driver in drivers}
 
     for tracker_id, tracker_data in data.get("result", {}).items():
-        sensors = tracker_data.get("inputs", [])
+        sensors = tracker_data.get("virtual_sensors", [])
         driver_id = parse_driver_id_from_sensors(sensors)
 
         if driver_id:
             driver = driver_map.get(driver_id)
             if driver:
                 employee_id = driver["id"]  # Renamed for clarity
+                # Check if already assigned
+                if last_assigned_drivers.get(tracker_id) == employee_id:
+                    print(f"Tracker {tracker_id} is already assigned to employee_id {employee_id}. Skipping.")
+                    continue
+
                 print(f"Matching employee_id {employee_id} for driver_id {driver_id}.")
                 assign_driver_to_tracker(tracker_id, driver, driver_id)
+                last_assigned_drivers[tracker_id] = employee_id
             else:
                 print(f"No matching driver found in driver_map for driver_id {driver_id}.")
         else:
-            print(f"No valid Driver ID found for tracker {tracker_id}.")
+            # Unassign driver if no valid Driver ID is found
+            if tracker_id in last_assigned_drivers:
+                print(f"No valid Driver ID found for tracker {tracker_id}. Unassigning driver.")
+                unassign_driver_from_tracker(tracker_id)
+                last_assigned_drivers.pop(tracker_id, None)
 
 # Parse driver ID from sensors (explicitly parsing Driver_ID_MSB and Driver_ID_LSB as using Teltonika device and tachograph data)
 def parse_driver_id_from_sensors(sensors):
@@ -95,12 +109,25 @@ def parse_driver_id_from_sensors(sensors):
     lsb = None
     for sensor in sensors:
         if sensor["label"] == "Driver_ID_MSB":
-            msb = int(sensor["value"])
+            msb = int(sensor["value"])  # Directly parse as integer
         elif sensor["label"] == "Driver_ID_LSB":
-            lsb = int(sensor["value"])
+            lsb = int(sensor["value"])  # Directly parse as integer
 
     if msb is not None and lsb is not None:
-        return (msb << 32) | lsb
+        # Convert MSB and LSB to hex
+        msb_hex = f"{msb:08x}"
+        lsb_hex = f"{lsb:08x}"
+
+        # Convert hex to ASCII characters
+        msb_ascii = "".join(chr(int(msb_hex[i:i + 2], 16)) for i in range(0, len(msb_hex), 2))
+        lsb_ascii = "".join(chr(int(lsb_hex[i:i + 2], 16)) for i in range(0, len(lsb_hex), 2))
+
+        # Combine ASCII strings
+        driver_id = msb_ascii + lsb_ascii
+        print(f"Processed Driver ID: {driver_id} (MSB: {msb}, LSB: {lsb})")
+        return driver_id
+
+    print("Driver_ID_MSB or Driver_ID_LSB missing in sensors.")
     return None
 
 # Assign driver to tracker
@@ -121,10 +148,28 @@ def assign_driver_to_tracker(tracker_id, driver, driver_id):
     else:
         print(f"Error assigning employee_id: {response.status_code}, {response.text}")
 
+# Unassign driver from tracker
+def unassign_driver_from_tracker(tracker_id):
+    url = f"{API_BASE_URL}/tracker/employee/assign"
+    payload = {
+        "hash": API_KEY,
+        "tracker_id": tracker_id,
+        "new_employee_id": ""
+    }
+
+    print(f"Unassigning driver from tracker {tracker_id}.")
+    print(f"Payload: {payload}")
+    response = requests.post(url, headers=HEADERS, json=payload)
+
+    if response.status_code == 200:
+        print(f"Driver unassigned from tracker {tracker_id} successfully.")
+    else:
+        print(f"Error unassigning driver: {response.status_code}, {response.text}")
+
 # Schedule tasks
 schedule.every().day.at("00:00").do(fetch_drivers)
 schedule.every().day.at("00:10").do(fetch_trackers)
-schedule.every(1).minutes.do(fetch_sensor_data)
+schedule.every(2).minutes.do(fetch_sensor_data)
 
 if __name__ == "__main__":
     # Run daily tasks immediately on start
