@@ -5,6 +5,17 @@ import schedule
 from dotenv import load_dotenv
 import os
 
+
+
+###############################
+
+
+# add rule that driver card must be present for the driver to be assigned. else assign null driver to tracker
+# avl_io_187 for driver 1 presence.
+
+
+###############################
+
 # Load environment variables
 load_dotenv()
 
